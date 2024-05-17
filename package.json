@@ -10,6 +10,9 @@
   },
   "dependencies": {
     "@react-native-picker/picker": "^2.7.2",
+    "@tensorflow/tfjs": "^4.19.0",
+    "@tensorflow/tfjs-react-native": "^1.0.0",
+    "axios": "^1.6.8",
     "expo": "~50.0.14",
     "expo-location": "~16.5.5",
     "expo-status-bar": "~1.11.1",

@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, TextInput, Button, ScrollView, TouchableOpacity,ImageBackground } from 'react-native';
+import { StyleSheet, Text, View, TextInput, Button, ScrollView, TouchableOpacity,ImageBackground, Alert } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import DataDisplay from './DataDisplay'; 
 import * as Location from 'expo-location';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-
 
 export default function App() {
   const [selectedState, setSelectedState] = useState('');
@@ -15,12 +13,13 @@ export default function App() {
   const [airQualityData, setAirQualityData] = useState([]);
   const [weatherData, setWeatherData] = useState([]);
   const [currentDate, setCurrentDate] = useState(new Date().toISOString().split('T')[0]);
+  const [model, setModel] = useState(null);
 
   useEffect(() => {
     // Load data from in.json file
     const loadData = async () => {
       try {
-        const data = require('./cities.json');
+        const data = require('./assets/cities.json');
         const uniqueStates = [...new Set(data.map(item => item.admin_name))];
         setStates(uniqueStates);
   
@@ -55,8 +54,6 @@ export default function App() {
   
       // Combine air quality and weather data
       const combinedData = combineData(airQualityData, weatherData);
-  
-      // Set combined data in state
       setAirQualityData(combinedData);
     } catch (error) {
       console.error(`Error fetching data: ${error.message}`);
@@ -126,13 +123,74 @@ export default function App() {
 
     let location = await Location.getCurrentPositionAsync({});
     const { latitude, longitude } = location.coords;
-    console.log(latitude);
-    console.log(longitude);
-
     fetchDataForCurrent(latitude, longitude);
   };
   
+  const sendPredictionRequest = async () => {
+    try {
+      const new_data_sequence = airQualityData.map(item => [
+        [
+          item.carbon_monoxide,
+          item.nitrogen_dioxide,
+          item.ozone,
+          item.pm10,
+          item.pm2_5,
+          item.sulphur_dioxide,
+          item.temperature_2m,
+          item.relativehumidity_2m,
+          item.dewpoint_2m,
+          item.precipitation,
+          item.rain,
+          item.snowfall,
+          item.pressure_msl,
+          item.surface_pressure,
+          item.cloudcover,
+          item.windspeed_10m
+        ]
+      ]);
   
+      const input_data = new_data_sequence;
+  
+      const url = 'https://85.pktriot.net/predict';
+      const data = { input: input_data };
+      const headers = { 'Content-Type': 'application/json' };
+  
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify(data),
+      });
+  
+      if (!response.ok) {
+        Alert.alert('Server Error' , 'Please try later');
+      }
+  
+      const responseData = await response.json();
+      Alert.alert('Prediction', `Prediction: ${responseData.prediction}`);
+    } catch (error) {
+      console.error('Error:', error);
+      Alert.alert('Error', 'Failed to get prediction');
+    }
+  }
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 1; // Show 1 hour of data per page
+
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = currentPage * itemsPerPage;
+
+  const currentData = airQualityData.slice(startIndex, endIndex);
+
+  const nextPage = () => {
+    if (currentPage < Math.ceil(airQualityData.length / itemsPerPage)) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const previousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
   return (
     <ImageBackground source={require('./wallpaper.jpeg')} style={styles.background}>
       <ScrollView style={styles.container}>
@@ -170,22 +228,38 @@ export default function App() {
         <Text style={styles.txt}>Use Current location</Text>
       </TouchableOpacity>
       </View>
+
+      {currentData.length > 0 && (
+      <TouchableOpacity onPress={sendPredictionRequest} style={styles.predictButton}>
+        <Text style={styles.predictButtonText}>Get AQI Prediction</Text>
+      </TouchableOpacity>
+      )}
+
+      {currentData.length > 0 && (
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginVertical:8 }}>
+          <TouchableOpacity onPress={previousPage} disabled={currentPage === 1} style={styles.pagination}><Icon name="arrow-back-ios" size={25} color="#142368" /></TouchableOpacity>
+          <TouchableOpacity onPress={nextPage} disabled={currentPage === Math.ceil(airQualityData.length / itemsPerPage)} style={styles.pagination}><Icon name="arrow-forward-ios" size={25} color="#142368" /></TouchableOpacity>
+        </View>
+      )}
       {/* Render combined data */}
-      {airQualityData.length > 0 && (
-  <View style={styles.column}>
-    {airQualityData.map((entry, index) => (
-      <View key={index}>
-        <Text style={styles.subLabel}>{entry.timeStamp}</Text>
-        {Object.entries(entry).map(([key, value]) => (
-          <Text style={styles.obj} key={key}>{`${key}: ${value}`}</Text>
-        ))}
+      {currentData.map((entry, index) => (
+        <View key={index} style={styles.column}>
+          <Text style={styles.subLabel}>{entry.timeStamp}</Text>
+          {Object.entries(entry).map(([key, value]) => (
+            <Text style={styles.obj} key={key}>{`${key}: ${value}`}</Text>
+          ))}
+        </View>
+      ))}
+      
+      {/* Pagination buttons */}
+      {currentData.length > 0 && (
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginVertical: 8 }}>
+        <TouchableOpacity onPress={previousPage} disabled={currentPage === 1} style={styles.pagination}><Icon name="arrow-back-ios" size={25} color="#142368" /></TouchableOpacity>
+        <TouchableOpacity onPress={nextPage} disabled={currentPage === Math.ceil(airQualityData.length / itemsPerPage)} style={styles.pagination}><Icon name="arrow-forward-ios" size={25} color="#142368" /></TouchableOpacity>
       </View>
-    ))}
-  </View>
-)}
+      )}
       <StatusBar style="auto" />
       </ScrollView>
-    {/* </View> */}
     </ImageBackground>
   );
 }
@@ -193,12 +267,35 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    borderWidth:2,
-    paddingVertical:10,
+    borderWidth:0,
     height:'100%',
     paddingHorizontal:5,
     marginTop:50,
     backgroundColor: 'rgba(255, 255, 255, 0.0)',
+  },
+  pagination:{
+    alignContent:'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    alignItems:'center',
+    alignSelf:'center',
+    borderRadius:10,
+    padding:5,
+    borderColor:'black',
+    borderWidth:1,
+
+  },
+  predictButton: {
+    marginTop: 20,
+    padding: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 5,
+    alignItems: 'center',
+    borderWidth:1
+  },
+  predictButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    color:'#142368',
   },
   background: {
     flex: 1,
@@ -208,7 +305,7 @@ const styles = StyleSheet.create({
   input: {
     height: 40,
     width: '100%',
-    borderColor: 'gray',
+    borderColor: 'black',
     borderWidth: 1,
     marginBottom: 30,
     paddingHorizontal: 10,
@@ -220,19 +317,23 @@ const styles = StyleSheet.create({
     paddingHorizontal:20,
     marginTop:2,
     backgroundColor:'white',
-    borderColor:'white',
-    borderWidth:0.5,
+    borderColor:'black',
+    borderWidth:1,
     borderRadius:10,
     backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderWidth:1
+
    
   },
   label: {
     fontWeight: 'bold',
     backgroundColor: 'rgba(255, 255, 255, 0.0)',
+    
   },
   subLabel: {
     fontWeight: 'bold',
     margin: 5,
+    
   },
   obj:{
     marginBottom:10
@@ -247,14 +348,13 @@ const styles = StyleSheet.create({
     paddingVertical:2,
     justifyContent:'space-evenly',
     borderColor:'#a9a9a9',
-    borderWidth:0,
     borderRadius:10,
     backgroundColor: 'rgba(255, 255, 255, 0.0)',
   },
   curr:{
     color:'blue',
-    borderColor:'white',
-    borderWidth:0.5,
+    borderColor:'black',
+    borderWidth:1,
     height:'100%',
     alignContent:'center',
     alignItems:'center',
@@ -267,8 +367,8 @@ const styles = StyleSheet.create({
     alignContent:'center',
     alignItems:'center',
     marginVertical:2,
-    borderColor:'#a9a9a9',
-    borderWidth:0.5,
+    borderColor:'black',
+    borderWidth:1,
     padding:5,
     borderRadius:10,
     backgroundColor: 'rgba(255, 255, 255, 0.0)',
@@ -279,8 +379,8 @@ const styles = StyleSheet.create({
     marginVertical:2,
     backgroundColor: 'white',
     alignItems:'center',
-    borderColor:'#a9a9a9',
-    borderWidth:0.5,
+    borderColor:'black',
+    borderWidth:1,
     borderRadius:10,
     padding:5,
     backgroundColor: 'rgba(255, 255, 255, 0.5)',
