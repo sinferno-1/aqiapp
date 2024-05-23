@@ -42,12 +42,12 @@ export default function App() {
 
     const { lat, lng } = cityObject;
 
-    const airQualityUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lng}&hourly=pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone,aerosol_optical_depth,dust,uv_index,uv_index_clear_sky,ammonia&start_date=${currentDate}&end_date=${currentDate}`;
+    const airQualityUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lng}&current=us_aqi&hourly=pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone,aerosol_optical_depth,dust,uv_index,uv_index_clear_sky,ammonia,us_aqi&start_date=${currentDate}&end_date=${currentDate}`;
     const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&start_date=${currentDate}&end_date=${currentDate}&hourly=temperature_2m,relativehumidity_2m,dewpoint_2m,apparent_temperature,precipitation,rain,snowfall,pressure_msl,surface_pressure,cloudcover,cloudcover_low,cloudcover_mid,cloudcover_high,et0_fao_evapotranspiration,windspeed_10m,windspeed_100m,winddirection_10m,winddirection_100m,windgusts_10m`;
     try {
       const airQualityResponse = await fetch(airQualityUrl);
       const airQualityData = await airQualityResponse.json();
-  
+      console.log(airQualityData);
       // Fetch weather data
       const weatherResponse = await fetch(weatherUrl);
       const weatherData = await weatherResponse.json();
@@ -62,20 +62,19 @@ export default function App() {
 
   const fetchDataForCurrent = async (latitude, longitude) => {
   
-    const airQualityUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${latitude}&longitude=${longitude}&hourly=pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone,aerosol_optical_depth,dust,uv_index,uv_index_clear_sky,ammonia&start_date=${currentDate}&end_date=${currentDate}`;
+    const airQualityUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${latitude}&longitude=${longitude}&current=us_aqi&hourly=pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone,aerosol_optical_depth,dust,uv_index,uv_index_clear_sky,ammonia,us_aqi&start_date=${currentDate}&end_date=${currentDate}`;
     const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&start_date=${currentDate}&end_date=${currentDate}&hourly=temperature_2m,relativehumidity_2m,dewpoint_2m,apparent_temperature,precipitation,rain,snowfall,pressure_msl,surface_pressure,cloudcover,cloudcover_low,cloudcover_mid,cloudcover_high,et0_fao_evapotranspiration,windspeed_10m,windspeed_100m,winddirection_10m,winddirection_100m,windgusts_10m`;
     try {
       // Fetch air quality data
       const airQualityResponse = await fetch(airQualityUrl);
       const airQualityData = await airQualityResponse.json();
-  
+      
       // Fetch weather data
       const weatherResponse = await fetch(weatherUrl);
       const weatherData = await weatherResponse.json();
-  
+      
       // Combine air quality and weather data
       const combinedData = combineData(airQualityData, weatherData);
-  
       // Set combined data in state
       setAirQualityData(combinedData);
     } catch (error) {
@@ -151,7 +150,7 @@ export default function App() {
   
       const input_data = new_data_sequence;
   
-      const url = 'https://85.pktriot.net/predict';
+      const url = 'https://white-elephant-52.telebit.io/predict';
       const data = { input: input_data };
       const headers = { 'Content-Type': 'application/json' };
   
@@ -169,7 +168,7 @@ export default function App() {
       Alert.alert('Prediction', `Prediction: ${responseData.prediction}`);
     } catch (error) {
       console.error('Error:', error);
-      Alert.alert('Error', 'Failed to get prediction');
+      Alert.alert('Server Error', 'Failed to get prediction');
     }
   }
   const [currentPage, setCurrentPage] = useState(1);
