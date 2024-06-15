@@ -150,7 +150,7 @@ export default function App() {
   
       const input_data = new_data_sequence;
   
-      const url = 'https://white-elephant-52.telebit.io/predict';
+      const url = 'https://little-snow-18911.pktriot.net/predict';
       const data = { input: input_data };
       const headers = { 'Content-Type': 'application/json' };
   
@@ -165,7 +165,7 @@ export default function App() {
       }
   
       const responseData = await response.json();
-      Alert.alert('Prediction', `Prediction: ${responseData.prediction}`);
+      Alert.alert('Prediction', `Prediction: ${responseData.prediction*499*-1}`);
     } catch (error) {
       console.error('Error:', error);
       Alert.alert('Server Error', 'Failed to get prediction');
